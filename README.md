@@ -592,3 +592,7 @@ Please, make sure all steps are using **the same** python version and that you h
 ## License
 
 [License](LICENSE.txt)
+
+## Weight and Biases Link
+
+https://wandb.ai/hannah-antigua-natwest/nyc_airbnb/artifacts/model_export/random_forest_export/v2/files/conda.yaml
