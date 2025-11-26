@@ -88,17 +88,16 @@ def go(config: DictConfig):
                     "stratify_by": config["modeling"]["stratify_by"]
                 },
             )
-
         if "train_random_forest" in active_steps:
-            # NOTE: we need to serialize the random forest configuration into JSON
+            # Serialize the random forest configuration into JSON
             rf_config = os.path.abspath("rf_config.json")
             with open(rf_config, "w+") as fp:
-                json.dump(dict(config["modeling"]["random_forest"].items()), fp)  # DO NOT TOUCH
+                json.dump(dict(config["modeling"]["random_forest"].items()), fp)
 
             # Run the train_random_forest step
             _ = mlflow.run(
                 os.path.join(hydra.utils.get_original_cwd(), "src", "train_random_forest"),
-                "main",
+                entry_point="main",
                 parameters={
                     "trainval_artifact": "trainval_data.csv:latest",
                     "val_size": config["modeling"]["val_size"],
@@ -106,18 +105,20 @@ def go(config: DictConfig):
                     "stratify_by": config["modeling"]["stratify_by"],
                     "rf_config": rf_config,
                     "max_tfidf_features": config["modeling"]["max_tfidf_features"],
-                    "output_artifact": "random_forest_model"
-                }
+                    "output_artifact": "random_forest_export"
+                },
+                env_manager="conda"
             )
 
         if "test_regression_model" in active_steps:
-
-            ##################
-            # Implement here #
-            ##################
-
-            pass
-
+            _ = mlflow.run(
+                os.path.join(config["main"]["components_repository"], "test_regression_model"),
+                "main",
+                parameters={
+                    "mlflow_model": "random_forest_export:prod",
+                    "test_dataset": "test_data.csv:latest"
+                }
+            )
 
 if __name__ == "__main__":
     go()
