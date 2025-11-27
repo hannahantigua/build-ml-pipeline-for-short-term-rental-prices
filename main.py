@@ -35,18 +35,18 @@ def go(config: DictConfig):
     # Move to a temporary directory
     with tempfile.TemporaryDirectory() as tmp_dir:
 
-        if "download" in active_steps:
-            # Download file and load in W&B
+        if "basic_cleaning" in active_steps:
+            sample_file = os.path.basename(config["etl"]["sample"])
             _ = mlflow.run(
-                f"{config['main']['components_repository']}/get_data",
+                os.path.join(hydra.utils.get_original_cwd(), "src", "basic_cleaning"),
                 "main",
-                version='main',
-                env_manager="conda",
                 parameters={
-                    "sample": config["etl"]["sample"],
-                    "artifact_name": "sample.csv",
-                    "artifact_type": "raw_data",
-                    "artifact_description": "Raw file as downloaded"
+                    "input_artifact": f"{sample_file}:latest",  # use sample1 or sample2
+                    "output_artifact": "clean_sample.csv",
+                    "output_type": "clean_sample",
+                    "output_description": "Data with outliers and null values removed",
+                    "min_price": config['etl']['min_price'],
+                    "max_price": config['etl']['max_price']
                 },
             )
 
@@ -65,12 +65,14 @@ def go(config: DictConfig):
             )
 
         if "data_check" in active_steps:
+            sample_file = os.path.basename(config["etl"]["sample"])
+            print(f"Running data_check on CSV: {sample_file}") # for debugging
             _ = mlflow.run(
                 os.path.join(hydra.utils.get_original_cwd(), "src", "data_check"),
                 "main",
                 parameters={
-                    "csv": "clean_sample.csv:latest",
-                    "ref": "clean_sample.csv:reference",
+                    "csv": f"{sample_file}:latest",
+                    "ref": f"{sample_file}:reference",
                     "kl_threshold": config["data_check"]["kl_threshold"],
                     "min_price": config["etl"]["min_price"],
                     "max_price": config["etl"]["max_price"],
